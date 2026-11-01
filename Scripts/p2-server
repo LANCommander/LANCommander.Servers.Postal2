@@ -1,0 +1,26 @@
+#!/bin/sh
+# Start the Postal 2: Share the Pain dedicated server (START_EXE).
+#
+# Runs `UCC.exe server <map>?Game=<class>[?AdminPassword=..][?options] ini=<P2_INI>` from System/
+# under Wine. Server settings live in P2_INI (see the 30-ConfigurePostal2 hook); any START_ARGS
+# are appended.
+set -e
+
+system="${SERVER_ROOT:-/config/Merged}/System"
+
+if [ ! -f "$system/UCC.exe" ]; then
+    echo "System/UCC.exe not found in ${SERVER_ROOT:-/config/Merged}. Put a Postal 2: Share the Pain install in /config/Server." >&2
+    exit 1
+fi
+
+url="${P2_MAP:-MPDGT-Asylum}"
+[ -z "$P2_GAME_TYPE" ] || url="$url?Game=$P2_GAME_TYPE"
+# The admin password is not a config setting in this engine; it is only read from the URL
+[ -z "$P2_ADMIN_PASSWORD" ] || url="$url?AdminPassword=$P2_ADMIN_PASSWORD"
+[ -z "$P2_URL_OPTIONS" ] || url="$url?${P2_URL_OPTIONS#\?}"
+
+echo "Starting: UCC.exe server ${url%%\?AdminPassword=*}... ini=${P2_INI:-Server.ini} log=server.log $*"
+
+# UCC resolves packages and inis relative to its working directory
+export WINE_WORKDIR="$system"
+exec wine-run UCC.exe server "$url" "ini=${P2_INI:-Server.ini}" log=server.log "$@"
